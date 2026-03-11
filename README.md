@@ -26,10 +26,73 @@
 - **show_create_table** - 获取建表语句
 
 ## 安全特性
-- ✅ 参数化查询防止 SQL 注入
-- ✅ DELETE/UPDATE 无 WHERE 条件时拒绝执行
-- ✅ 支持只读模式 (`MYSQL_READONLY=true`)
-- ✅ 批量操作自动使用事务
+
+### 🔒 参数化查询防 SQL 注入
+所有工具均使用参数化查询，有效防止 SQL 注入攻击：
+```javascript
+// ✅ 安全：使用参数化查询
+{ "sql": "SELECT * FROM users WHERE id = ?", "params": [1] }
+
+// ❌ 危险：直接拼接 SQL（本工具不支持）
+{ "sql": "SELECT * FROM users WHERE id = 1 OR 1=1" }
+```
+
+### 🛡️ 危险操作拦截
+DELETE 和 UPDATE 语句必须包含 WHERE 条件，否则自动拒绝执行：
+```javascript
+// ❌ 被拒绝：缺少 WHERE 条件
+{ "sql": "DELETE FROM users" }
+// 错误：危险操作：DELETE 或 UPDATE 语句缺少 WHERE 子句，拒绝执行
+
+// ✅ 允许执行
+{ "sql": "DELETE FROM users WHERE id = ?", "params": [1] }
+```
+
+### 📖 只读模式（MYSQL_READONLY）
+通过环境变量启用只读模式，禁止一切写入操作，适合生产环境查询：
+
+```bash
+# 启用只读模式
+MYSQL_READONLY=true
+```
+
+**只读模式的防护层级：**
+
+| 层级 | 防护机制 | 说明 |
+|------|----------|------|
+| 第一层 | 工具层拦截 | `insert`/`update`/`delete`/`execute` 工具直接拒绝执行 |
+| 第二层 | 批量过滤 | `batch_execute` 自动过滤非查询语句 |
+| 第三层 | 执行层检查 | 底层执行器最终校验，只允许 SELECT/SHOW/DESCRIBE |
+
+**示例 - 只读模式下的行为：**
+```javascript
+// ❌ 被拒绝（工具层）
+{ "sql": "INSERT INTO users (name) VALUES ('test')" }
+// 错误：当前处于只读模式，禁止执行 INSERT/UPDATE/DELETE 操作
+
+// ❌ 被拒绝（批量操作）
+{ "statements": [
+  { "sql": "SELECT * FROM users" },
+  { "sql": "DELETE FROM logs WHERE id = 1" }
+]}
+// 错误：只读模式下禁止执行 1 条写入语句
+
+// ✅ 允许执行
+{ "sql": "SELECT * FROM users WHERE id = 1" }
+{ "sql": "SHOW TABLES" }
+{ "sql": "DESCRIBE users" }
+```
+
+### 🔗 批量操作事务保护
+批量操作自动使用事务，任一语句失败则全部回滚，保证数据一致性：
+```javascript
+// 两条语句在同一个事务中执行
+{ "statements": [
+  { "sql": "INSERT INTO orders (user_id) VALUES (?)", "params": [1] },
+  { "sql": "UPDATE users SET order_count = order_count + 1 WHERE id = ?", "params": [1] }
+]}
+// 如果第二条失败，第一条自动回滚
+```
 
 ## 安装
 
@@ -72,7 +135,9 @@ MYSQL_DATABASE=test
 
 # 可选配置
 MYSQL_CONNECTION_LIMIT=10
-MYSQL_READONLY=false
+
+# 安全相关配置
+MYSQL_READONLY=false        # 启用只读模式（true/false）
 
 # SSL 配置（可选）
 MYSQL_SSL_CA=/path/to/ca.pem
@@ -187,6 +252,29 @@ MYSQL_SSL_CA=/path/to/ca.pem
 - **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 - **Windows**: `%APPDATA%/Claude/claude_desktop_config.json`
 
+#### 只读模式配置示例
+
+生产环境建议启用只读模式，防止误操作：
+
+```json
+{
+  "mcpServers": {
+    "mysql-production": {
+      "command": "npx",
+      "args": ["-y", "@wenit/mysql-mcp-server"],
+      "env": {
+        "MYSQL_HOST": "prod-db.example.com",
+        "MYSQL_PORT": "3306",
+        "MYSQL_USER": "readonly_user",
+        "MYSQL_PASSWORD": "password",
+        "MYSQL_DATABASE": "production",
+        "MYSQL_READONLY": "true"
+      }
+    }
+  }
+}
+```
+
 ## 使用示例
 
 ### 查询数据
@@ -259,9 +347,19 @@ npm run inspector
 
 ## 注意事项
 
-1. **安全性**：建议使用只读模式进行测试，避免误操作数据
+1. **安全性**：
+   - 生产环境强烈建议启用 `MYSQL_READONLY=true` 只读模式
+   - 即使是开发环境，也建议先使用只读模式熟悉数据结构
+   - 所有写入操作都有 WHERE 条件检查，防止误删全表数据
+
 2. **连接池**：默认连接池大小为 10，可通过 `MYSQL_CONNECTION_LIMIT` 调整
+
 3. **超时**：默认连接超时为 60 秒，可通过 `MYSQL_TIMEOUT` 调整
+
+4. **只读模式限制**：
+   - 只允许执行 `SELECT`、`SHOW`、`DESCRIBE`、`DESC`、`EXPLAIN` 语句
+   - `batch_execute` 中的写入语句会被自动过滤
+   - 修改类工具（insert/update/delete/execute）会直接返回错误
 
 ## License
 
