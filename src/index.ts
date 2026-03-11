@@ -39,7 +39,8 @@ function loadEnvFile(): string {
   
   // 按优先级尝试加载
   for (const envPath of paths) {
-    console.log(`Loading .env from: ${envPath}`);
+    // 日志输出到 stderr，避免干扰 stdio 通信
+    console.error(`[MySQL MCP] Loading .env from: ${envPath}`);
     if (existsSync(envPath)) {
       dotenvConfig({ path: envPath });
       return envPath;
