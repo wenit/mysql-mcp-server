@@ -37,10 +37,10 @@
 
 ```bash
 # 全局安装
-npm install -g @your-username/mysql-mcp-server
+npm install -g @wenit/mysql-mcp-server
 
 # 或在项目中安装
-npm install @your-username/mysql-mcp-server
+npm install @wenit/mysql-mcp-server
 ```
 
 ### 从源码安装
@@ -89,7 +89,7 @@ MYSQL_SSL_CA=/path/to/ca.pem
   "mcpServers": {
     "mysql": {
       "command": "npx",
-      "args": ["-y", "@your-username/mysql-mcp-server"],
+      "args": ["-y", "@wenit/mysql-mcp-server"],
       "env": {
         "MYSQL_HOST": "localhost",
         "MYSQL_PORT": "3306",

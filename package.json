@@ -1,5 +1,5 @@
 {
-  "name": "@your-username/mysql-mcp-server",
+  "name": "@wenit/mysql-mcp-server",
   "version": "1.0.0",
   "type": "module",
   "main": "dist/index.js",
@@ -28,17 +28,17 @@
     "claude",
     "ai"
   ],
-  "author": "Your Name <your.email@example.com>",
+  "author": "wenit",
   "license": "MIT",
   "description": "MySQL MCP Server - 通过 MCP 协议操作 MySQL 数据库",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-username/mysql-mcp-server.git"
+    "url": "git+https://github.com/wenit/mysql-mcp-server.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/mysql-mcp-server/issues"
+    "url": "https://github.com/wenit/mysql-mcp-server/issues"
   },
-  "homepage": "https://github.com/your-username/mysql-mcp-server#readme",
+  "homepage": "https://github.com/wenit/mysql-mcp-server#readme",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.27.1",
     "dotenv": "^16.4.7",
