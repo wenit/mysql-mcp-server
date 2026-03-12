@@ -1,5 +1,7 @@
 # MySQL MCP Server
 
+**简体中文 | [English](./README_en.md)**
+
 一个基于 Node.js 的 MySQL MCP (Model Context Protocol) 服务器，支持通过 MCP 协议操作 MySQL 数据库。
 
 ## 功能特性
